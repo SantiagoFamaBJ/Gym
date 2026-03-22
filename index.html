@@ -6,7 +6,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Gym">
-  <link rel="apple-touch-icon" href="icon.png">
 <title>Gym</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -233,11 +232,23 @@ tr:hover .ex-edit-btn{opacity:1;}
 .panel-title{font-family:var(--display);font-size:22px;letter-spacing:2px;margin-bottom:14px;}
 
 @media(max-width:700px){
-  .resumen-grid{grid-template-columns:1fr 1fr;}
-  .logo-block h1{font-size:40px;}
-  .ex-table{font-size:12px;}
-  .weight-input{width:52px;font-size:11px;}
+  .logo-block h1{font-size:36px;}
+  .app{padding:16px 12px 60px;}
+  .ex-table{font-size:11px;}
+  .ex-table th.hide-mobile,
+  .ex-table td.hide-mobile{display:none;}
+  .weight-input{width:58px;font-size:12px;}
   .hist-select{max-width:100%;}
+  .day-tab{padding:7px 12px;font-size:11px;}
+  .ex-name{font-size:12px;}
+  .iactions{opacity:1;}
+  .ex-edit-btn{opacity:1;}
+  .week-label{font-size:22px;}
+  .info-strip{gap:6px;}
+  .strip-pill{font-size:10px;padding:5px 9px;}
+  .done-btn{font-size:10px;padding:6px 12px;}
+  .day-title{font-size:28px;}
+  .view-tab{padding:6px 12px;font-size:11px;}
 }
 </style>
 </head>
@@ -268,16 +279,7 @@ tr:hover .ex-edit-btn{opacity:1;}
   <div class="view-tab" onclick="setView('historial')">Historial</div>
 </div>
 
-<!-- Info strip -->
-<div class="info-strip">
-  <div class="strip-pill semana">📅 Semana <span id="semanaAutoVal">—</span> desde el inicio</div>
-  <div class="strip-pill" style="gap:8px;">
-    <span style="font-family:var(--mono);font-size:10px;color:var(--muted);">Inicio semana 1:</span>
-    <input type="date" id="configFecha" style="background:transparent;border:none;
-      font-family:var(--mono);font-size:11px;color:var(--text);outline:none;cursor:pointer;"
-      onchange="saveConfig()">
-  </div>
-</div>
+
 
 <!-- RUTINA VIEW -->
 <div id="viewRutina">
@@ -464,8 +466,8 @@ let weights   = null;
 let completed = {};
 let config    = {};
 let customEx  = {};
-let curDay    = detectDay();
-let curWeek   = 1;
+let curDay    = localStorage.getItem('gym_last_day') || detectDay();
+let curWeek   = parseInt(localStorage.getItem('gym_last_week') || '1');
 let curView   = 'rutina';
 let progChart = null;
 let editExId  = null;
@@ -551,18 +553,10 @@ function exName(ex)   { return customEx[ex.id]?.name   ?? ex.name; }
 function exSeries(ex) { return customEx[ex.id]?.series ?? ex.series; }
 
 // ── WEEK / DATE ───────────────────────────────────────────────
-function calcCurrentWeek() {
-  if (!config.startDate) return 1;
-  const start = new Date(config.startDate);
-  const now   = new Date();
-  const diff  = Math.floor((now - start) / (7*24*60*60*1000));
-  return Math.max(1, diff + 1);
-}
-
 function changeWeek(dir) {
   curWeek = Math.max(1, curWeek + dir);
   document.getElementById('weekNum').textContent = curWeek;
-  updateStrip();
+  localStorage.setItem('gym_last_week', curWeek);
   renderDay();
   renderChart();
 }
@@ -570,24 +564,6 @@ function changeWeek(dir) {
 function detectDay() {
   const map = {1:'lunes',2:'martes',3:'miercoles',5:'viernes',6:'sabado'};
   return map[new Date().getDay()] || 'lunes';
-}
-
-// ── STRIP ─────────────────────────────────────────────────────
-function updateStrip() {
-  const auto = calcCurrentWeek();
-  document.getElementById('semanaAutoVal').textContent = config.startDate ? auto : '—';
-}
-
-// ── CONFIG ────────────────────────────────────────────────────
-function saveConfig() {
-  config.startDate = document.getElementById('configFecha').value;
-  curWeek = calcCurrentWeek();
-  document.getElementById('weekNum').textContent = curWeek;
-  updateStrip();
-  renderTabs();
-  renderDay();
-  renderChart();
-  save();
 }
 
 // ── VIEW ──────────────────────────────────────────────────────
@@ -635,6 +611,7 @@ function renderTabs() {
 
 function setDay(day) {
   curDay = day;
+  localStorage.setItem('gym_last_day', day);
   renderTabs();
   renderDay();
   updateChartSelect();
@@ -656,10 +633,10 @@ function renderDay() {
 
   html += `<table class="ex-table">
     <thead><tr>
-      <th style="width:36%">Ejercicio</th>
+      <th style="width:40%">Ejercicio</th>
       <th>Series/Rep</th>
-      <th class="center">RIR</th>
-      <th class="center">Desc.</th>
+      <th class="center hide-mobile">RIR</th>
+      <th class="center hide-mobile">Desc.</th>
       <th class="center" style="color:var(--acc);">SEM ${curWeek}</th>
       <th class="center">Variación</th>
     </tr></thead>
@@ -703,8 +680,8 @@ function renderDay() {
         </div>
       </td>
       <td><span class="ex-meta">${esc(exSeries(ex))}</span></td>
-      <td class="weight-cell center"><span class="ex-meta">${ex.rir||'—'}</span></td>
-      <td class="weight-cell center"><span class="ex-meta">${ex.desc||'—'}</span></td>
+      <td class="weight-cell center hide-mobile"><span class="ex-meta">${ex.rir||'—'}</span></td>
+      <td class="weight-cell center hide-mobile"><span class="ex-meta">${ex.desc||'—'}</span></td>
       <td class="weight-cell current-week center">
         <input class="weight-input ${inputCls}" type="text"
           value="${esc(curVal)}" placeholder="—"
@@ -726,7 +703,6 @@ function toggleDone() {
   save();
   renderTabs();
   renderDay();
-  updateStrip();
 }
 
 // ── WEIGHT ────────────────────────────────────────────────────
@@ -858,10 +834,7 @@ document.getElementById('editExModal').addEventListener('click', e => {
 
 // ── INIT ──────────────────────────────────────────────────────
 loadFromSupabase().then(() => {
-  curWeek = calcCurrentWeek();
   document.getElementById('weekNum').textContent = curWeek;
-  document.getElementById('configFecha').value = config.startDate || '';
-  updateStrip();
   renderTabs();
   renderDay();
   updateChartSelect();

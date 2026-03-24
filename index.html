@@ -646,6 +646,7 @@ function renderDay() {
       <th class="center hide-mobile">RIR</th>
       <th class="center hide-mobile">Desc.</th>
       <th class="center" style="color:var(--acc);">SEM ${curWeek}</th>
+      <th class="center">Previo</th>
       <th class="center">Variación</th>
     </tr></thead>
     <tbody>`;
@@ -696,7 +697,8 @@ function renderDay() {
           data-id="${ex.id}" data-week="${curWeek-1}"
           onchange="updateWeight(this)" oninput="onWeightInput(this)">
       </td>
-      <td class="weight-cell center">${varHtml}</td>
+      <td class="weight-cell center"><span class="ex-meta" style="color:var(--muted)">${prevVal !== '' ? prevVal+'kg' : '—'}</span></td>
+<td class="weight-cell center">${varHtml}</td>
     </tr>`;
   });
 
